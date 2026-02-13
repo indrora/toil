@@ -12,7 +12,7 @@ func TestParallelReduce_Sum(t *testing.T) {
 	input := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	sumFunc := func(a, b int) (int, error) { return a + b, nil }
 	opts := Options{}.WithWorkers(3)
-	result, err := ParallelReduce(&input, sumFunc, opts)
+	result, err := ParallelReduce(input, sumFunc, opts)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -25,7 +25,7 @@ func TestParallelReduce_Product(t *testing.T) {
 	input := []int{1, 2, 3, 4}
 	prodFunc := func(a, b int) (int, error) { return a * b, nil }
 	opts := Options{}.WithWorkers(2)
-	result, err := ParallelReduce(&input, prodFunc, opts)
+	result, err := ParallelReduce(input, prodFunc, opts)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -38,7 +38,7 @@ func TestParallelReduce_Empty(t *testing.T) {
 	input := []int{}
 	sumFunc := func(a, b int) (int, error) { return a + b, nil }
 	opts := Options{}.WithWorkers(2)
-	result, err := ParallelReduce(&input, sumFunc, opts)
+	result, err := ParallelReduce(input, sumFunc, opts)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -51,7 +51,7 @@ func TestParallelReduce_SingleElement(t *testing.T) {
 	input := []int{42}
 	sumFunc := func(a, b int) (int, error) { return a + b, nil }
 	opts := Options{}.WithWorkers(2)
-	result, err := ParallelReduce(&input, sumFunc, opts)
+	result, err := ParallelReduce(input, sumFunc, opts)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -69,7 +69,7 @@ func TestParallelReduce_Error(t *testing.T) {
 		return a + b, nil
 	}
 	opts := Options{}.WithWorkers(2)
-	_, err := ParallelReduce(&input, errFunc, opts)
+	_, err := ParallelReduce(input, errFunc, opts)
 	if err == nil {
 		t.Fatal("Expected error, got nil")
 	}
@@ -80,7 +80,7 @@ func TestParallelReduce_NonAssociative(t *testing.T) {
 	subFunc := func(a, b int) (int, error) { return a - b, nil }
 	opts := Options{}.WithWorkers(2)
 	// Result is not well-defined for non-associative functions, but should not panic or deadlock
-	_, err := ParallelReduce(&input, subFunc, opts)
+	_, err := ParallelReduce(input, subFunc, opts)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -93,7 +93,7 @@ func TestParallelReduce_ParallelCorrectness(t *testing.T) {
 	}
 	sumFunc := func(a, b int) (int, error) { return a + b, nil }
 	opts := Options{}.WithWorkers(8)
-	result, err := ParallelReduce(&input, sumFunc, opts)
+	result, err := ParallelReduce(input, sumFunc, opts)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -126,7 +126,7 @@ func BenchmarkParallelReduce_HeavySum(b *testing.B) {
 			b.ResetTimer()
 
 			for i := 0; i < b.N; i++ {
-				_, err := ParallelReduce(&input, heavySum, opts)
+				_, err := ParallelReduce(input, heavySum, opts)
 				if err != nil {
 					b.Fatal(err)
 				}
@@ -162,7 +162,7 @@ func BenchmarkParallelReduce_WorkerScaling(b *testing.B) {
 			b.ResetTimer()
 
 			for i := 0; i < b.N; i++ {
-				_, err := ParallelReduce(&input, heavyReduce, opts)
+				_, err := ParallelReduce(input, heavyReduce, opts)
 				if err != nil {
 					b.Fatal(err)
 				}
@@ -192,7 +192,7 @@ func BenchmarkParallelReduce_FloatPrecision(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := ParallelReduce(&input, precisionSum, opts)
+		_, err := ParallelReduce(input, precisionSum, opts)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -223,7 +223,7 @@ func BenchmarkParallelReduce_StringConcat(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := ParallelReduce(&input, heavyConcat, opts)
+		_, err := ParallelReduce(input, heavyConcat, opts)
 		if err != nil {
 			b.Fatal(err)
 		}

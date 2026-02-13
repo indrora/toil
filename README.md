@@ -32,7 +32,7 @@ func main() {
 	}
 	
 	opts := toil.Options{}.WithWorkers(2)
-	results, err := toil.ParallelTransform(&input, double, opts)
+	results, err := toil.ParallelTransform(input, double, opts)
 	if err != nil {
 		panic(err)
 	}
@@ -62,7 +62,7 @@ func main() {
 	}
 	
 	opts := toil.Options{}.WithWorkers(3)
-	result, err := toil.ParallelReduce(&input, sum, opts)
+	result, err := toil.ParallelReduce(input, sum, opts)
 	if err != nil {
 		panic(err)
 	}

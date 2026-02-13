@@ -47,7 +47,7 @@ func TestToil_BasicFunctionality(t *testing.T) {
 	}
 
 	opts := Options{}.WithWorkers(2)
-	results, err := ParallelTransform(&input, double, opts)
+	results, err := ParallelTransform(input, double, opts)
 
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
@@ -74,7 +74,7 @@ func TestToil_DefaultWorkers(t *testing.T) {
 
 	// Test with zero workers (should default to runtime.NumCPU())
 	opts := Options{}.WithWorkers(0)
-	results, err := ParallelTransform(&input, identity, opts)
+	results, err := ParallelTransform(input, identity, opts)
 
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
@@ -86,7 +86,7 @@ func TestToil_DefaultWorkers(t *testing.T) {
 
 	// Test with negative workers (should also default to runtime.NumCPU())
 	opts.workers = -1
-	results, err = ParallelTransform(&input, identity, opts)
+	results, err = ParallelTransform(input, identity, opts)
 
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
@@ -105,7 +105,7 @@ func TestToil_EmptyInput(t *testing.T) {
 	}
 
 	opts := Options{workers: 2}
-	results, err := ParallelTransform(&input, identity, opts)
+	results, err := ParallelTransform(input, identity, opts)
 
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
@@ -130,7 +130,7 @@ func TestToil_WithError_AbortOnError(t *testing.T) {
 	}
 
 	opts := Options{}.WithWorkers(2).StopOnError(true)
-	results, err := ParallelTransform(&input, errorOnEven, opts)
+	results, err := ParallelTransform(input, errorOnEven, opts)
 
 	if err == nil {
 		t.Fatal("Expected error but got none")
@@ -158,7 +158,7 @@ func TestToil_WithError_ContinueOnError(t *testing.T) {
 	}
 
 	opts := Options{}.WithWorkers(2).StopOnError(false)
-	results, err := ParallelTransform(&input, errorOnEven, opts)
+	results, err := ParallelTransform(input, errorOnEven, opts)
 
 	// Should return an error but also results
 	if err == nil {
@@ -191,7 +191,7 @@ func TestToil_NoError_ContinueOnErrorOption(t *testing.T) {
 	}
 
 	opts := Options{}.WithWorkers(2).StopOnError(false)
-	results, err := ParallelTransform(&input, double, opts)
+	results, err := ParallelTransform(input, double, opts)
 
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
@@ -219,7 +219,7 @@ func TestToil_WithSlowFunctions(t *testing.T) {
 
 	start := time.Now()
 	opts := Options{workers: 3} // Parallel execution
-	results, err := ParallelTransform(&input, slowFunc, opts)
+	results, err := ParallelTransform(input, slowFunc, opts)
 	duration := time.Since(start)
 
 	if err != nil {
@@ -268,7 +268,7 @@ func TestToil_WorkerLimiting(t *testing.T) {
 	}
 
 	opts := Options{workers: maxWorkers}
-	_, err := ParallelTransform(&input, countingFunc, opts)
+	_, err := ParallelTransform(input, countingFunc, opts)
 
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
@@ -299,7 +299,7 @@ func TestToil_DifferentTypes(t *testing.T) {
 	}
 
 	opts := Options{}.WithWorkers(2)
-	results, err := ParallelTransform(&input, stringToInt, opts)
+	results, err := ParallelTransform(input, stringToInt, opts)
 
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
@@ -327,7 +327,7 @@ func BenchmarkToil_Sequential(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := ParallelTransform(&input, square, opts)
+		_, err := ParallelTransform(input, square, opts)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -348,7 +348,7 @@ func BenchmarkToil_Parallel(b *testing.B) {
 	b.ResetTimer()
 
 	for b.Loop() {
-		_, err := ParallelTransform(&input, square, opts)
+		_, err := ParallelTransform(input, square, opts)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -373,7 +373,7 @@ func BenchmarkToil_Sized(b *testing.B) {
 
 			for b.Loop() {
 				start := time.Now()
-				_, err := ParallelTransform(&input, square, opts)
+				_, err := ParallelTransform(input, square, opts)
 				duration := time.Since(start)
 				b.ReportMetric((float64(size) / float64(duration.Nanoseconds())), "item/ns")
 				if err != nil {

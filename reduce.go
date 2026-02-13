@@ -3,6 +3,7 @@ package toil
 import (
 	"runtime"
 	"sync"
+	"sync/atomic"
 )
 
 // a ReduceFunc is a function that takes two values of T and returns the "sum" of those values.
@@ -14,54 +15,62 @@ type ReduceFunc[T any] func(T, T) (T, error)
 // The function f should be associative for correct results. The reduction is performed in parallel
 // using the number of workers specified in opts. If the slice is empty, returns an error.
 
-func ParallelReduce[T any](v *[]T, f ReduceFunc[T], opts Options) (T, error) {
+func ParallelReduce[T any](v []T, f ReduceFunc[T], opts Options) (T, error) {
 	var zero T
-	n := len(*v)
+	n := len(v)
 	if n == 0 {
 		return zero, nil // or return error if you want to disallow empty input
 	}
 	if n == 1 {
-		return (*v)[0], nil
+		return v[0], nil
 	}
 	if opts.workers <= 0 {
 		opts.workers = runtime.NumCPU()
 	}
 
-	items := *v
+	items := v
 	for len(items) > 1 {
+		// Pre-allocate next slice with exact capacity to eliminate reallocations
+		nextCap := (len(items) + 1) / 2  // Ceiling division for pair count
+		next := make([]T, nextCap)       // Pre-allocated with exact size (not just capacity)
+		
 		var (
-			wg   sync.WaitGroup
-			mu   sync.Mutex
-			next []T
-			err  error
+			wg       sync.WaitGroup
+			firstErr atomic.Pointer[error]  // Lock-free error storage
 		)
 		sem := make(chan struct{}, opts.workers)
 
 		for i := 0; i < len(items)-1; i += 2 {
 			wg.Add(1)
 			sem <- struct{}{}
-			go func(a, b T) {
+			
+			go func(a, b T, resultIndex int) {
 				defer wg.Done()
-				res, e := f(a, b)
-				mu.Lock()
-				if e != nil && err == nil {
-					err = e
+				defer func() { <-sem }()
+				
+				res, err := f(a, b)
+				if err != nil {
+					// Lock-free: only first error wins, others ignored
+					firstErr.CompareAndSwap(nil, &err)
 				}
-				next = append(next, res)
-				mu.Unlock()
-				<-sem
-			}(items[i], items[i+1])
+				// Lock-free: direct indexed write, no contention
+				next[resultIndex] = res
+				
+			}(items[i], items[i+1], i/2)
 		}
-		// If odd, carry last item forward
+		
+		// Handle odd element outside goroutines (no mutex needed)
 		if len(items)%2 == 1 {
-			mu.Lock()
-			next = append(next, items[len(items)-1])
-			mu.Unlock()
+			next[nextCap-1] = items[len(items)-1]
 		}
+		
 		wg.Wait()
-		if err != nil {
-			return zero, err
+		
+		// Check for any errors after all work complete
+		if errPtr := firstErr.Load(); errPtr != nil {
+			return zero, *errPtr
 		}
+		
 		items = next
 	}
 	return items[0], nil
